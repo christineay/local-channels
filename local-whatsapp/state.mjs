@@ -71,10 +71,12 @@ export function parseInbound(message, credentials, sentIds, prefix = '@box', all
   const fullText = content?.conversation || content?.extendedTextMessage?.text || media?.caption || '';
   if (typeof fullText !== 'string' || fullText.length > MAX_TEXT + prefix.length + 1) return null;
   const head = `${prefix} `;
-  const prefixed = fullText.toLowerCase().startsWith(head.toLowerCase()) || (media && fullText.toLowerCase() === prefix.toLowerCase());
-  if (!prefixed && !(media && allowBareMedia)) return null;
+  const prefixed = fullText.toLowerCase().startsWith(head.toLowerCase()) || fullText.toLowerCase() === prefix.toLowerCase();
+  // The owner self-chat is already checked above. Text needs no addressing
+  // prefix; media still needs one unless the user opened an upload window.
+  if (media && !prefixed && !allowBareMedia) return null;
   const text = (prefixed ? fullText.slice(head.length) : fullText).trim();
-  if (!text && !media) return null;
+  if (text.length > MAX_TEXT || (!text && !media)) return null;
   return {
     id: createHash('sha256').update(`${chat}\0${key.id}`).digest('hex').slice(0, 24),
     chat,
