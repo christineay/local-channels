@@ -18,7 +18,7 @@ bridge does not forward. The plugin does not use the WhatsApp Business API.
 Since **0.4.1**, set `LOCAL_WHATSAPP_PREFIX` to an empty value and restart the
 bridge to forward every nonempty self-chat text (up to the bridge's size limit)
 without a prefix, including personal notes. A non-empty value (for example
-`@work`) replaces the default prefix. The bridge still ignores messages from
+`@work`, or just `@`) replaces the default prefix. The bridge still ignores messages from
 other accounts/chats and its own replies. Captionless media still needs the
 upload window.
 

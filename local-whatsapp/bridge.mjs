@@ -24,6 +24,7 @@ const debugReceipts = process.env.LOCAL_WHATSAPP_DEBUG === '1';
 const addressPrefix = (() => {
   const raw = process.env.LOCAL_WHATSAPP_PREFIX;
   if (raw !== undefined && raw.trim() === '') return '';
+  if (raw?.trim() === '@') return '@';
   const name = (raw ?? userInfo().username).trim().replace(/^@/, '');
   return `@${/^[A-Za-z0-9_.-]{1,64}$/.test(name) ? name : userInfo().username}`;
 })();
