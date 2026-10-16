@@ -84,13 +84,14 @@ test('sent text can be followed by a final reply while retries remain idempotent
   assert.equal(inbound.reply.text, 'final');
 });
 
-test('captionless media remains opt-in while owner self-chat text needs no prefix', () => {
+test('captionless media remains opt-in while unprefixed text needs the plain-text opt-in', () => {
   const upload = media({ caption: '' });
   assert.equal(parseInbound(upload, creds, {}), null);
   assert.ok(parseInbound(upload, creds, {}, '@box', true).attachment);
   assert.equal(parseInbound(raw(upload.message, { remoteJid: '456@s.whatsapp.net' }), creds, {}, '@box', true), null);
   assert.equal(parseInbound(raw(upload.message, { fromMe: false }), creds, {}, '@box', true), null);
-  assert.equal(parseInbound(raw({ conversation: 'ordinary text' }), creds, {}, '@box', true).text, 'ordinary text');
+  assert.equal(parseInbound(raw({ conversation: 'ordinary text' }), creds, {}, '@box', true), null);
+  assert.equal(parseInbound(raw({ conversation: 'ordinary text' }), creds, {}, '@box', true, true).text, 'ordinary text');
   const video = raw({ videoMessage: { caption: '', mimetype: 'video/mp4', fileLength: 3 } });
   assert.equal(parseInbound(video, creds, {}), null);
   assert.equal(parseInbound(video, creds, {}, '@box', true).attachment.kind, 'video');

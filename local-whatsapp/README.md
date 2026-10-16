@@ -2,9 +2,10 @@
 
 Optional personal WhatsApp linked-device bridge. The device link belongs to one
 per-user bridge process, not to a Claude or Codex session. The bridge accepts
-text in the linked account's Message Yourself chat without an addressing prefix.
-An optional `@USER ` prefix (the Linux user running the bridge, `agent` on
-agent-box) is still accepted and stripped; it never forwards other WhatsApp conversations. A message is routed to
+commands in the linked account's Message Yourself chat beginning with
+`@USER ` (the Linux user running the bridge, `agent` on agent-box; override with
+`LOCAL_WHATSAPP_PREFIX`, for example `LOCAL_WHATSAPP_PREFIX=@work` when you run
+several agents); it never forwards other WhatsApp conversations. A message is routed to
 one configured session. Claude receives a channel notification and can answer
 with `whatsapp_reply`; Codex receives `codex queue` and can answer with the
 `reply` CLI. The agent-box user controls session selection.
@@ -14,12 +15,12 @@ This is an unofficial WhatsApp Web client based on
 grants the bridge device access to the WhatsApp account, including chats the
 bridge does not forward. The plugin does not use the WhatsApp Business API.
 
-Since **0.4.1**, all nonempty self-chat text is forwarded, including personal notes
-you previously left unprefixed. Use another chat for notes you do not want sent
-to the agent. The bridge still ignores messages from other accounts/chats and
-its own replies, using persisted sent-message IDs to avoid reply loops. Control
-commands such as `/sessions`, `/target NAME`, `/profile NAME` and `/attach` also
-work without `@USER`. The media caption/upload-window rules are unchanged.
+Since **0.4.1**, plain text is an explicit opt-in. Set
+`LOCAL_WHATSAPP_PLAIN_TEXT=1` and restart the bridge to forward every nonempty
+self-chat text without a prefix, including personal notes; the prefix still
+works. Without it, unprefixed text is ignored. The bridge still ignores
+messages from other accounts/chats and its own replies. The media
+caption/upload-window rules are unchanged.
 
 ## Install and pair
 
@@ -77,7 +78,7 @@ It uses one agent-box session slot. Restart the shell session with
 On agent-box versions with built-in WhatsApp supervision, the bridge does not
 need this shell session.
 
-Send `hello` in Message Yourself; `@agent hello` still works too. Replies can be text or native images. The bridge
+Send `@agent hello` in Message Yourself (or just `hello` with `LOCAL_WHATSAPP_PLAIN_TEXT=1`). Replies can be text or native images. The bridge
 sends no automatic receipt by default. For diagnostic receipts, start the bridge
 with `LOCAL_WHATSAPP_DEBUG=1`; unset it and restart to disable them. Other values
 do not enable debug mode. On agent-box, set this variable in the settings secrets
@@ -164,7 +165,7 @@ Send an image, video, or document to Message Yourself with a caption beginning w
 send `@agent /attach` as a text message. This enables captionless media in your
 self-chat for 10 minutes. The agent can enable the same window with
 `node bridge.mjs receive-files`. Outside that window, media needs an explicit
-prefix. Plain text in Message Yourself is accepted independently of the upload
+prefix. Plain text, when enabled, is accepted independently of the upload
 window. View-once media is not imported.
 
 The bridge downloads at most 20 MiB per attachment, streams it into its private

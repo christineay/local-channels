@@ -19,6 +19,11 @@ const authPath = join(dir, 'auth');
 const command = process.argv[2];
 const logger = pino({ level: 'silent' });
 const debugReceipts = process.env.LOCAL_WHATSAPP_DEBUG === '1';
+const plainText = process.env.LOCAL_WHATSAPP_PLAIN_TEXT === '1';
+const addressPrefix = (() => {
+  const name = (process.env.LOCAL_WHATSAPP_PREFIX || userInfo().username).trim().replace(/^@/, '');
+  return `@${/^[A-Za-z0-9_.-]{1,64}$/.test(name) ? name : userInfo().username}`;
+})();
 const sessionBin = process.env.LOCAL_WHATSAPP_SESSION_BIN || '/usr/local/bin/agent-box-session';
 const codexBin = process.env.LOCAL_WHATSAPP_CODEX_BIN || join(userInfo().homedir, '.nix-profile', 'bin', 'codex');
 if (!isAbsolute(sessionBin) || !isAbsolute(codexBin)) throw new Error('bridge helper paths must be absolute');
@@ -437,7 +442,7 @@ async function serve() {
       inboundQueue = inboundQueue.then(async () => {
         if (type !== 'notify') return;
         for (const message of messages) {
-          const inbound = parseInbound(message, credentials.creds, state.sentIds, `@${userInfo().username}`, Date.now() < (state.acceptMediaUntil || 0));
+          const inbound = parseInbound(message, credentials.creds, state.sentIds, addressPrefix, Date.now() < (state.acceptMediaUntil || 0), plainText);
           if (!inbound || Object.hasOwn(state.messages, inbound.id)) continue;
           try {
             if (Object.values(state.messages).filter((m) => !m.reply).length >= 200) throw new Error('inbox full');

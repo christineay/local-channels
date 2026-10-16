@@ -61,7 +61,7 @@ function contentOf(message) {
   return null;
 }
 
-export function parseInbound(message, credentials, sentIds, prefix = '@box', allowBareMedia = false) {
+export function parseInbound(message, credentials, sentIds, prefix = '@box', allowBareMedia = false, plainText = false) {
   const key = message?.key;
   const chat = key?.remoteJid?.replace(/:\d+@/, '@');
   if (!key?.id || !key?.fromMe || !ownChatIds(credentials).includes(chat)) return null;
@@ -72,9 +72,9 @@ export function parseInbound(message, credentials, sentIds, prefix = '@box', all
   if (typeof fullText !== 'string' || fullText.length > MAX_TEXT + prefix.length + 1) return null;
   const head = `${prefix} `;
   const prefixed = fullText.toLowerCase().startsWith(head.toLowerCase()) || fullText.toLowerCase() === prefix.toLowerCase();
-  // The owner self-chat is already checked above. Text needs no addressing
-  // prefix; media still needs one unless the user opened an upload window.
-  if (media && !prefixed && !allowBareMedia) return null;
+  // The owner self-chat is already checked above. Plain text needs no prefix
+  // only when the user opted in; media needs one unless an upload window is open.
+  if (!prefixed && (media ? !allowBareMedia : !plainText)) return null;
   const text = (prefixed ? fullText.slice(head.length) : fullText).trim();
   if (text.length > MAX_TEXT || (!text && !media)) return null;
   return {
