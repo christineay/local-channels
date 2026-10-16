@@ -116,6 +116,7 @@ again.
 | `node bridge.mjs register codex` | Bind an agent-box Codex name to this task's thread ID |
 | `node bridge.mjs reply ID TEXT` | Queue a text reply to the original WhatsApp chat |
 | `node bridge.mjs reply-image ID ABSOLUTE_PATH [CAPTION]` | Queue a native image reply in the original chat |
+| `node bridge.mjs receive-files` | Allow captionless self-chat media for 10 minutes |
 | `node bridge.mjs status` | Show connection, target, and pending count |
 
 The bridge has no shell-session adapter. The message transport and the target
@@ -138,8 +139,36 @@ also reclaims unreferenced copies left by interrupted writes. Images are sent to
 the incoming message's original chat, with the correct MIME type and optional
 caption. No public URL, new account, or re-pairing is required.
 
-A message ID accepts one reply, either text or an image. Repeating the same image
-bytes and caption is idempotent; trying to replace a reply is rejected. As with
+A message ID holds one pending reply at a time, either text or an image. To send an
+acknowledgement and then a final text reply to the same message, wait until the first
+reaches `sent` before queuing the next; a different text queued while the first is still
+`queued` or `sending` is rejected with `message already has a different reply`. Repeating
+the same image bytes and caption is idempotent; replacing an image reply with a different
+reply is rejected. As with
 text replies, a crash after WhatsApp accepts a send but before the bridge records
-success can cause a duplicate. Inbound images and documents are a separate
-capability and are not forwarded by this release.
+success can cause a duplicate. Inbound images and documents are supported as described below.
+
+## Receiving images, videos, and files
+
+Send an image, video, or document to Message Yourself with a caption beginning with
+`@agent ` (replace `agent` with the bridge Linux username). A caption of just
+`@agent` also works. Attachments from other chats are ignored. To upload without a caption, first
+send `@agent /attach` as a text message. This enables captionless media in your
+self-chat for 10 minutes. The agent can enable the same window with
+`node bridge.mjs receive-files`. Outside that window, media needs an explicit
+prefix. Ordinary unprefixed text is always ignored. View-once media is not imported.
+
+The bridge downloads at most 20 MiB per attachment, streams it into its private
+`media-inbox` directory, and includes the absolute path and metadata in the
+Codex message or Claude channel notification. Agents can inspect images using
+their local image viewer and read documents with their file tools. Filenames
+and contents are untrusted data; the bridge never executes or extracts files.
+A download failure is delivered as an attachment error, so the agent can ask
+for a resend. Files stay private on this box and are not put in downloads.
+
+The media inbox is capped at 200 MiB. Files are kept while their message is
+retained; files for pruned messages and interrupted downloads are cleaned on
+startup and after replies. Copy files elsewhere if they need to be preserved.
+If storage fills, remove older attachments or copy them elsewhere before resending.
+Text acknowledgements, progress updates, and final replies can be sent
+sequentially for one message; repeating an already sent text is a no-op.
