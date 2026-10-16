@@ -114,7 +114,7 @@ test(`bridge delivers ${plain ? 'plain' : 'prefixed'} text and replies with debu
   writeFileSync(join(fixture.state, 'target.json'), JSON.stringify({ harness: 'claude', session: 'agent-claude', name: 'claude' }));
   const env = { ...process.env, LOCAL_WHATSAPP_STATE_DIR: fixture.state, FAKE_OUT: fixture.fakeOut,
     LOCAL_WHATSAPP_SESSION_BIN: fixture.sessionBin, LOCAL_WHATSAPP_DEBUG: debug,
-    ...(plain ? { FAKE_INBOUND_TEXT: 'hello', LOCAL_WHATSAPP_PLAIN_TEXT: '1' } : {}) };
+    ...(plain ? { FAKE_INBOUND_TEXT: 'hello', LOCAL_WHATSAPP_PREFIX: '' } : {}) };
   const daemon = spawn(process.execPath, [join(fixture.dir, 'bridge.mjs'), 'serve'], { env, stdio: ['ignore', 'pipe', 'pipe'] });
   let peer;
   try {
@@ -309,7 +309,7 @@ test('plain self-chat control selects a registered agent-box session without re-
   const bin = join(fixture.dir, 'bin');
   mkdirSync(bin);
   const env = { ...process.env, LOCAL_WHATSAPP_STATE_DIR: fixture.state, FAKE_OUT: fixture.fakeOut,
-    FAKE_INBOUND_TEXT: '/target codex', LOCAL_WHATSAPP_PLAIN_TEXT: '1', LOCAL_WHATSAPP_SESSION_BIN: fixture.sessionBin };
+    FAKE_INBOUND_TEXT: '/target codex', LOCAL_WHATSAPP_PREFIX: '', LOCAL_WHATSAPP_SESSION_BIN: fixture.sessionBin };
   const registration = spawnSync(process.execPath, [join(fixture.dir, 'bridge.mjs'), 'register', 'codex'], {
     env: { ...env, LOCAL_WEBHOOK_SESSION: `${userInfo().username}-codex`, CODEX_THREAD_ID: 'thread-1234' }, encoding: 'utf8',
   });

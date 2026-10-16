@@ -10,7 +10,7 @@ function message(text, id = 'ABC123', remoteJid = '14155551234@s.whatsapp.net') 
   return { key: { id, fromMe: true, remoteJid }, message: { conversation: text } };
 }
 
-test('plain text needs an explicit opt-in; the prefix is always accepted', () => {
+test('a prefix is required unless it is configured empty', () => {
   assert.equal(parseInbound(message('hello'), credentials, {}), null);
   assert.equal(parseInbound(message('/sessions'), credentials, {}), null);
   assert.equal(parseInbound(message('@BOX hello'), credentials, {}).text, 'hello');
@@ -18,44 +18,45 @@ test('plain text needs an explicit opt-in; the prefix is always accepted', () =>
   assert.equal(parseInbound(message('@box hello'), credentials, {}, '@work'), null);
 });
 
-test('with plain text enabled, owner self-chat text accepts an optional case-insensitive addressing prefix', () => {
-  assert.equal(parseInbound(message('hello'), credentials, {}, '@box', false, true).text, 'hello');
-  assert.equal(parseInbound(message('  hello  '), credentials, {}, '@box', false, true).text, 'hello');
-  assert.equal(parseInbound(message('@BOX hello'), credentials, {}, '@box', false, true).text, 'hello');
-  assert.equal(parseInbound(message('@agent hello'), credentials, {}, '@agent', false, true).text, 'hello');
-  assert.equal(parseInbound(message('/sessions'), credentials, {}, '@box', false, true).text, '/sessions');
-  assert.equal(parseInbound(message('hello @box again'), credentials, {}, '@box', false, true).text, 'hello @box again');
-  assert.equal(parseInbound(message('@boxes hello'), credentials, {}, '@box', false, true).text, '@boxes hello');
-  for (const text of ['', '  ', '@box', '@box ']) {
-    assert.equal(parseInbound(message(text), credentials, {}, '@box', false, true), null);
+test('with an empty prefix, owner self-chat text needs no addressing', () => {
+  assert.equal(parseInbound(message('hello'), credentials, {}, '').text, 'hello');
+  assert.equal(parseInbound(message('  hello  '), credentials, {}, '').text, 'hello');
+  assert.equal(parseInbound(message('@BOX hello'), credentials, {}, '').text, '@BOX hello');
+  assert.equal(parseInbound(message('@agent hello'), credentials, {}, '').text, '@agent hello');
+  assert.equal(parseInbound(message('/sessions'), credentials, {}, '').text, '/sessions');
+  assert.equal(parseInbound(message('hello @box again'), credentials, {}, '').text, 'hello @box again');
+  assert.equal(parseInbound(message('@boxes hello'), credentials, {}, '').text, '@boxes hello');
+  for (const text of ['', '  ']) {
+    assert.equal(parseInbound(message(text), credentials, {}, ''), null);
   }
 });
 
 test('plain and prefixed text keep owner, self-chat and sent-message checks', () => {
   for (const text of ['hello', '@box hello', '/sessions', '@box /sessions']) {
-    assert.equal(parseInbound(message(text, 'A', '19995551234@s.whatsapp.net'), credentials, {}, '@box', false, true), null);
-    assert.equal(parseInbound(message(text, 'A', '123@g.us'), credentials, {}, '@box', false, true), null);
-    assert.equal(parseInbound({ ...message(text), key: { ...message(text).key, fromMe: false } }, credentials, {}, '@box', false, true), null);
-    assert.equal(parseInbound(message(text), credentials, { 'wa:ABC123': 1 }, '@box', false, true), null);
-    assert.equal(parseInbound(message(text), {}, {}, '@box', false, true), null);
+    assert.equal(parseInbound(message(text, 'A', '19995551234@s.whatsapp.net'), credentials, {}, ''), null);
+    assert.equal(parseInbound(message(text, 'A', '123@g.us'), credentials, {}, ''), null);
+    assert.equal(parseInbound({ ...message(text), key: { ...message(text).key, fromMe: false } }, credentials, {}, ''), null);
+    assert.equal(parseInbound(message(text), credentials, { 'wa:ABC123': 1 }, ''), null);
+    assert.equal(parseInbound(message(text), {}, {}, ''), null);
   }
   const linked = { me: { ...credentials.me, lid: '123456:2@lid' } };
-  assert.equal(parseInbound(message('hello', 'A', '123456@lid'), linked, {}, '@box', false, true).text, 'hello');
-  assert.equal(parseInbound(message('hello', 'A', '14155551234:3@s.whatsapp.net'), credentials, {}, '@box', false, true).text, 'hello');
+  assert.equal(parseInbound(message('hello', 'A', '123456@lid'), linked, {}, '').text, 'hello');
+  assert.equal(parseInbound(message('hello', 'A', '14155551234:3@s.whatsapp.net'), credentials, {}, '').text, 'hello');
 });
 
-test('plain and prefixed text enforce the same message size limit', () => {
+test('empty-prefix and prefixed text enforce the same message size limit', () => {
   const text = 'a'.repeat(MAX_TEXT);
-  for (const prefix of ['', '@box ']) {
-    assert.equal(parseInbound(message(prefix + text), credentials, {}, '@box', false, true).text, text);
-    assert.equal(parseInbound(message(prefix + text + 'a'), credentials, {}, '@box', false, true), null);
+  for (const prefix of [undefined, '']) {
+    const head = prefix === undefined ? '@box ' : '';
+    assert.equal(parseInbound(message(head + text), credentials, {}, prefix).text, text);
+    assert.equal(parseInbound(message(head + text + 'a'), credentials, {}, prefix), null);
   }
   const extended = message('unused');
   extended.message = { extendedTextMessage: { text: 'reply to a message' } };
-  assert.equal(parseInbound(extended, credentials, {}, '@box', false, true).text, 'reply to a message');
+  assert.equal(parseInbound(extended, credentials, {}, '').text, 'reply to a message');
   const ephemeral = message('unused');
   ephemeral.message = { ephemeralMessage: { message: { conversation: 'ephemeral text' } } };
-  assert.equal(parseInbound(ephemeral, credentials, {}, '@box', false, true).text, 'ephemeral text');
+  assert.equal(parseInbound(ephemeral, credentials, {}, '').text, 'ephemeral text');
 });
 
 test('message ids deduplicate and replies cannot change destinations', () => {

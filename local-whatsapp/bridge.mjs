@@ -19,9 +19,12 @@ const authPath = join(dir, 'auth');
 const command = process.argv[2];
 const logger = pino({ level: 'silent' });
 const debugReceipts = process.env.LOCAL_WHATSAPP_DEBUG === '1';
-const plainText = process.env.LOCAL_WHATSAPP_PLAIN_TEXT === '1';
+// LOCAL_WHATSAPP_PREFIX names the agent (default `@<linux user>`). Set it empty
+// to accept every self-chat text without a prefix.
 const addressPrefix = (() => {
-  const name = (process.env.LOCAL_WHATSAPP_PREFIX || userInfo().username).trim().replace(/^@/, '');
+  const raw = process.env.LOCAL_WHATSAPP_PREFIX;
+  const name = (raw ?? userInfo().username).trim().replace(/^@/, '');
+  if (name === '') return '';
   return `@${/^[A-Za-z0-9_.-]{1,64}$/.test(name) ? name : userInfo().username}`;
 })();
 const sessionBin = process.env.LOCAL_WHATSAPP_SESSION_BIN || '/usr/local/bin/agent-box-session';
@@ -354,7 +357,7 @@ async function serve() {
               queueReply(state, inbound.id, 'Box target: automatic. The next message starts a session using the selected profile.');
             } else if (name) {
               const selected = available.find((item) => item.name === name);
-              if (!selected) throw new Error(`unknown session; send ${addressPrefix} /sessions`);
+              if (!selected) throw new Error(`unknown session; send ${addressPrefix ? `${addressPrefix} ` : ''}/sessions`);
               await selectTarget(name);
               queueReply(state, inbound.id, `Box target: ${name} (${selected.harness}, ${selected.status}). Messages will wait if it is unavailable.`);
               await dispatch();
@@ -442,7 +445,7 @@ async function serve() {
       inboundQueue = inboundQueue.then(async () => {
         if (type !== 'notify') return;
         for (const message of messages) {
-          const inbound = parseInbound(message, credentials.creds, state.sentIds, addressPrefix, Date.now() < (state.acceptMediaUntil || 0), plainText);
+          const inbound = parseInbound(message, credentials.creds, state.sentIds, addressPrefix, Date.now() < (state.acceptMediaUntil || 0));
           if (!inbound || Object.hasOwn(state.messages, inbound.id)) continue;
           try {
             if (Object.values(state.messages).filter((m) => !m.reply).length >= 200) throw new Error('inbox full');

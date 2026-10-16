@@ -61,7 +61,7 @@ function contentOf(message) {
   return null;
 }
 
-export function parseInbound(message, credentials, sentIds, prefix = '@box', allowBareMedia = false, plainText = false) {
+export function parseInbound(message, credentials, sentIds, prefix = '@box', allowBareMedia = false) {
   const key = message?.key;
   const chat = key?.remoteJid?.replace(/:\d+@/, '@');
   if (!key?.id || !key?.fromMe || !ownChatIds(credentials).includes(chat)) return null;
@@ -70,11 +70,13 @@ export function parseInbound(message, credentials, sentIds, prefix = '@box', all
   const media = content?.imageMessage || content?.documentMessage || content?.videoMessage;
   const fullText = content?.conversation || content?.extendedTextMessage?.text || media?.caption || '';
   if (typeof fullText !== 'string' || fullText.length > MAX_TEXT + prefix.length + 1) return null;
+  // An empty prefix means plain mode: the owner self-chat is already checked
+  // above, so every text is accepted. Captioned media is accepted too.
+  const plain = prefix === '';
   const head = `${prefix} `;
-  const prefixed = fullText.toLowerCase().startsWith(head.toLowerCase()) || fullText.toLowerCase() === prefix.toLowerCase();
-  // The owner self-chat is already checked above. Plain text needs no prefix
-  // only when the user opted in; media needs one unless an upload window is open.
-  if (!prefixed && (media ? !allowBareMedia : !plainText)) return null;
+  const prefixed = !plain && (fullText.toLowerCase().startsWith(head.toLowerCase()) || fullText.toLowerCase() === prefix.toLowerCase());
+  if (!prefixed && !plain && !(media && allowBareMedia)) return null;
+  if (plain && media && !fullText.trim() && !allowBareMedia) return null;
   const text = (prefixed ? fullText.slice(head.length) : fullText).trim();
   if (text.length > MAX_TEXT || (!text && !media)) return null;
   return {
