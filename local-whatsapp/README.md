@@ -16,8 +16,8 @@ grants the bridge device access to the WhatsApp account, including chats the
 bridge does not forward. The plugin does not use the WhatsApp Business API.
 
 Since **0.4.1**, plain text is an explicit opt-in. Set
-`LOCAL_WHATSAPP_PLAIN_TEXT=1` and restart the bridge to forward every nonempty
-self-chat text without a prefix, including personal notes; the prefix still
+`LOCAL_WHATSAPP_PLAIN_TEXT=1` and restart the bridge to forward nonempty
+self-chat text (up to the bridge's size limit) without a prefix, including personal notes; the prefix still
 works. Without it, unprefixed text is ignored. The bridge still ignores
 messages from other accounts/chats and its own replies. The media
 caption/upload-window rules are unchanged.

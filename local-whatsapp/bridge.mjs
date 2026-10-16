@@ -354,7 +354,7 @@ async function serve() {
               queueReply(state, inbound.id, 'Box target: automatic. The next message starts a session using the selected profile.');
             } else if (name) {
               const selected = available.find((item) => item.name === name);
-              if (!selected) throw new Error(`unknown session; send @${userInfo().username} /sessions`);
+              if (!selected) throw new Error(`unknown session; send ${addressPrefix} /sessions`);
               await selectTarget(name);
               queueReply(state, inbound.id, `Box target: ${name} (${selected.harness}, ${selected.status}). Messages will wait if it is unavailable.`);
               await dispatch();
