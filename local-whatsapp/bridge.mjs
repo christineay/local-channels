@@ -23,8 +23,8 @@ const debugReceipts = process.env.LOCAL_WHATSAPP_DEBUG === '1';
 // to accept every self-chat text without a prefix.
 const addressPrefix = (() => {
   const raw = process.env.LOCAL_WHATSAPP_PREFIX;
+  if (raw !== undefined && raw.trim() === '') return '';
   const name = (raw ?? userInfo().username).trim().replace(/^@/, '');
-  if (name === '') return '';
   return `@${/^[A-Za-z0-9_.-]{1,64}$/.test(name) ? name : userInfo().username}`;
 })();
 const sessionBin = process.env.LOCAL_WHATSAPP_SESSION_BIN || '/usr/local/bin/agent-box-session';
